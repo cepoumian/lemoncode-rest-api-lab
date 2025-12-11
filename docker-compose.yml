@@ -1,0 +1,12 @@
+services:
+  airbnb-db:
+    container_name: airbnb-db
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./mongo-data:/data/db
+volumes:
+  mongo-data:
+
+
