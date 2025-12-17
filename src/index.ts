@@ -14,12 +14,13 @@ app.use('/api/listings', listingApi);
 
 app.use(logErrorRequestMiddleware);
 
-app.listen(ENV.PORT, async () => {
-  if (!ENV.IS_API_MOCK) {
-    await dbServer.connect(ENV.MONGODB_URL as string);
-    console.log('Running DataBase');
-  } else {
-    console.log('Running Mock API');
-  }
+if (!ENV.IS_API_MOCK) {
+  await dbServer.connect(ENV.MONGODB_URL as string);
+  console.log('Running DataBase');
+} else {
+  console.log('Running Mock API');
+}
+
+app.listen(ENV.PORT, () => {
   console.log(`Server ready at port ${ENV.PORT}`);
 });
