@@ -1,6 +1,11 @@
 import { Router } from 'express';
+import { ObjectId } from 'mongodb';
+import type {
+  CreateReviewApiModel,
+  ReviewApiModel,
+} from './listing.api-model.js';
 import { createListingRepository } from '#dals/listing/index.js';
-import { mapListingToListItem } from './listing.mappers.js';
+import { mapListingToListItem, mapListingToDetail } from './listing.mappers.js';
 
 export const listingApi = Router();
 
@@ -38,9 +43,61 @@ listingApi
 
     res.send(listings.map(mapListingToListItem));
   })
-  .get('/:id', async (_req, res) => {
-    res.sendStatus(501);
+  .get('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      res.status(400).send('Invalid id');
+      return;
+    }
+
+    const listing = await listingRepository.getListingById(id);
+
+    if (!listing) {
+      res.sendStatus(400);
+      return;
+    }
+
+    res.send(mapListingToDetail(listing));
   })
   .get('/:id/reviews', async (_req, res) => {
     res.sendStatus(501);
+  })
+  .post('/:id/reviews', async (req, res) => {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      res.status(400).send('Invalid id');
+      return;
+    }
+
+    const body = req.body as Partial<CreateReviewApiModel>;
+
+    const reviewerName = body.reviewerName?.trim();
+    const comments = body.comments?.trim();
+
+    if (!reviewerName || !comments) {
+      res.status(400).send('reviewerName and comments are required');
+      return;
+    }
+
+    const createdReview: ReviewApiModel = {
+      id: new ObjectId().toHexString(),
+      date: new Date().toISOString(),
+      reviewerName,
+      comments,
+    };
+
+    const inserted = await listingRepository.addReview(id, {
+      reviewer_name: reviewerName,
+      comments,
+      date: new Date(createdReview.date),
+    });
+
+    if (!inserted) {
+      res.sendStatus(404);
+      return;
+    }
+
+    res.status(201).send(createdReview);
   });

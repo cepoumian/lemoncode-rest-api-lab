@@ -29,14 +29,13 @@ export const createListingRepository = (): ListingRepository => {
 
     async addReview(listingId, review) {
       if (!ObjectId.isValid(listingId)) {
-        return;
+        return false;
       }
-
       const objectId = new ObjectId(listingId);
-      const listing = data.find((l) => l._id.equals(objectId));
 
+      const listing = data.find((l) => l._id.equals(objectId));
       if (!listing) {
-        return;
+        return false;
       }
 
       const newReview = {
@@ -45,8 +44,8 @@ export const createListingRepository = (): ListingRepository => {
         reviewer_name: review.reviewer_name,
         comments: review.comments,
       };
-
       listing.reviews = [...(listing.reviews ?? []), newReview];
+      return true;
     },
   };
 };

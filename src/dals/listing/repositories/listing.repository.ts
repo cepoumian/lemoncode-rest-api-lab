@@ -15,5 +15,5 @@ export interface ListingRepository {
 
   getListingById(id: string): Promise<ListingDalModel | null>;
 
-  addReview(listingId: string, review: AddReviewDalModel): Promise<void>;
+  addReview(listingId: string, review: AddReviewDalModel): Promise<boolean>;
 }
