@@ -3,7 +3,7 @@ import type { ListingDalModel } from '../listing.model.js';
 import type { ListingRepository } from './listing.repository.js';
 import { mockListingList } from '../mock-data.js';
 
-export const createListingRepository = (): ListingRepository => {
+export const createListingMockRepository = (): ListingRepository => {
   // Copiamos en memoria para que tests/llamadas no muten el "seed" original
   let data: ListingDalModel[] = [...mockListingList];
 
