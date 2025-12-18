@@ -10,14 +10,14 @@ export const createTestApp = () => {
   return app;
 };
 
-describe('GET /api/listings (integration)', () => {
+describe('Listing API (integration)', () => {
   const app = createTestApp();
 
   beforeEach(async () => {
     await seedListings();
   });
 
-  it('returns a paginated list filtered by country', async () => {
+  it('GET /api/listings returns a paginated list filtered by country', async () => {
     const res = await request(app).get(
       '/api/listings?country=Portugal&page=1&pageSize=1'
     );
@@ -31,5 +31,47 @@ describe('GET /api/listings (integration)', () => {
       name: 'Ribeira Charming Duplex',
       address: { country: 'Portugal' },
     });
+  });
+
+  it('PUT /api/listings/:id updates name and persists it', async () => {
+    const id = '65097600a74000a4a4a22686';
+
+    const putRes = await request(app)
+      .put(`/api/listings/${id}`)
+      .send({ name: 'Updated name' });
+
+    expect(putRes.status).toBe(204);
+
+    const getRes = await request(app).get(`/api/listings/${id}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body).toMatchObject({
+      id,
+      name: 'Updated name',
+    });
+  });
+
+  it('PUT /api/listings/:id returns 400 when body is empty', async () => {
+    const id = '65097600a74000a4a4a22686';
+
+    const res = await request(app).put(`/api/listings/${id}`).send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('PUT /api/listings/:id returns 404 when listing does not exist', async () => {
+    const nonExistingId = '65097600a74000a4a4a22699';
+
+    const res = await request(app)
+      .put(`/api/listings/${nonExistingId}`)
+      .send({ name: "Doesn't matter" });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT /api/listings/:id returns 400 when id is invalid', async () => {
+    const res = await request(app)
+      .put('/api/listings/not-an-object-id')
+      .send({ name: 'Updated name' });
+
+    expect(res.status).toBe(400);
   });
 });
