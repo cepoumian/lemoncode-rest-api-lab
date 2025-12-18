@@ -1,7 +1,8 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId, Decimal128 } from 'mongodb';
 import { getListingCollection } from '../listing.context.js';
 import type { ListingDalModel } from '../listing.model.js';
 import type { ListingRepository } from './listing.repository.js';
+import type { UpdateListingDalModel } from './listing.repository.js';
 
 export const createListingMongoRepository = (): ListingRepository => {
   return {
@@ -71,6 +72,56 @@ export const createListingMongoRepository = (): ListingRepository => {
       );
 
       // devuelvemos un booleano para que la API pueda responder 404
+      return result.matchedCount === 1;
+    },
+
+    async updateListing(id, update: UpdateListingDalModel) {
+      if (!ObjectId.isValid(id)) {
+        return false;
+      }
+
+      const collection = getListingCollection();
+
+      // Construimos $set solo con lo que venga definido
+      const $set: Record<string, unknown> = {};
+
+      if (update.name !== undefined) {
+        $set.name = update.name;
+      }
+
+      if (update.description !== undefined) {
+        $set.description = update.description ?? null;
+      }
+
+      if (update.amenities !== undefined) {
+        $set.amenities = update.amenities ?? null;
+      }
+
+      if (update.imageUrl !== undefined) {
+        $set['images.picture_url'] = update.imageUrl ?? null;
+      }
+
+      if (update.price !== undefined) {
+        $set.price =
+          update.price === null
+            ? null
+            : Decimal128.fromString(String(update.price));
+      }
+
+      if (update.address?.street !== undefined) {
+        $set['address.street'] = update.address.street ?? null;
+      }
+
+      // Si no hay nada que actualizar, consideramos no-op exitoso
+      if (Object.keys($set).length === 0) {
+        return true;
+      }
+
+      const result = await collection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set }
+      );
+
       return result.matchedCount === 1;
     },
   };
