@@ -17,7 +17,7 @@ while (!exit) {
     name: 'consoleRunner',
     type: 'select',
     message: 'Which console-runner do you want to run?',
-    choices: ['queries', 'seed-data', 'exit'].map((option) => ({
+    choices: ['seed-data', 'seed-users', 'exit'].map((option) => ({
       title: option,
       value: option,
     })),

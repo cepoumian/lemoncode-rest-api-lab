@@ -1,5 +1,5 @@
 import { ObjectId, Decimal128 } from 'mongodb';
-import { getListingCollection } from '../listing.context.js';
+import { getListingContext } from '../listing.context.js';
 import type { ListingDalModel } from '../listing.model.js';
 import type { ListingRepository } from './listing.repository.js';
 import type { UpdateListingDalModel } from './listing.repository.js';
@@ -7,7 +7,7 @@ import type { UpdateListingDalModel } from './listing.repository.js';
 export const createListingMongoRepository = (): ListingRepository => {
   return {
     async getListingsByCountry(country, page, pageSize) {
-      const collection = getListingCollection();
+      const collection = getListingContext();
 
       const skip = (page - 1) * pageSize;
 
@@ -32,7 +32,7 @@ export const createListingMongoRepository = (): ListingRepository => {
         return null;
       }
 
-      const collection = getListingCollection();
+      const collection = getListingContext();
 
       // Proyección: detalle + últimas 5 reviews
       const projection = {
@@ -57,7 +57,7 @@ export const createListingMongoRepository = (): ListingRepository => {
         return false;
       }
 
-      const collection = getListingCollection();
+      const collection = getListingContext();
 
       const newReview = {
         _id: new ObjectId().toHexString(),
@@ -80,7 +80,7 @@ export const createListingMongoRepository = (): ListingRepository => {
         return false;
       }
 
-      const collection = getListingCollection();
+      const collection = getListingContext();
 
       // Construimos $set solo con lo que venga definido
       const $set: Record<string, unknown> = {};
