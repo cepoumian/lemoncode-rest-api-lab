@@ -1,5 +1,6 @@
 import { dbServer } from '#core/servers/db.server.js';
 import { ObjectId, Decimal128 } from 'mongodb';
+import { hash } from '#common/helpers/hash.helpers.js';
 
 export const seedListings = async () => {
   const col = dbServer.db.collection('listingsAndReviews');
@@ -28,4 +29,15 @@ export const seedListings = async () => {
       reviews: [],
     },
   ]);
+};
+
+export const seedUsers = async () => {
+  const users = dbServer.db.collection('users');
+  await users.deleteMany({});
+
+  await users.insertOne({
+    email: 'admin@email.com',
+    password: await hash('admin'),
+    role: 'admin',
+  });
 };
