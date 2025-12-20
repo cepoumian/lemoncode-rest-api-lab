@@ -1,151 +1,120 @@
-## Base URL
+# Backend REST API – Listings & Reviews
 
-`/api/listings`
+Este proyecto es una API REST desarrollada como parte del laboratorio del **Módulo de APIs REST** del bootcamp de backend de LemonCode.
 
----
-
-## 1) GET `/api/listings`
-
-### Propósito
-
-Listado paginado de listings filtrado por país.
-
-### Query params
-
-- `country` _(string, required)_: país exacto como viene en DB (`address.country`)
-- `page` _(number, optional, default = 1, min=1)_
-- `pageSize` _(number, optional, default = 10, min=1, max=50)_
-
-### Ejemplo
-
-`GET /api/listings?country=Portugal&page=1&pageSize=10`
-
-### Respuesta 200 (array)
-
-```json
-[
-  {
-    "id": "65097600a74000a4a4a22686",
-    "name": "Ribeira Charming Duplex",
-    "imageUrl": "https://a0.muscache.com/im/pictures/....jpg",
-    "price": 80,
-    "priceCurrency": "USD",
-    "address": {
-      "country": "Portugal"
-    }
-  }
-]
-```
-
-### Errores
-
-- 400 si falta `country` o `page/pageSize` inválidos.
-
-> Nota: en DB price es Decimal128. En API conviene exponer number (o string). Yo recomiendo number si no te piden lo contrario.
+La API expone endpoints para consultar y gestionar alojamientos (listings), reseñas (reviews) y autenticación de usuarios, siguiendo una arquitectura modular y escalable basada en el boilerplate de referencia del curso.
 
 ---
 
-## 2) GET `/api/listings/:id`
+## Arquitectura
 
-### Propósito
+El proyecto sigue una arquitectura en capas:
 
-Detalle de un listing por su `_id`.
+src/
+core/ # Infraestructura transversal (server, security, env, etc.)
+common/ # Helpers, middlewares comunes
+dals/ # Data Access Layer (MongoDB / Mock)
+pods/ # Features / dominios (listing, security)
+console-runners/
 
-### Path param
+### Principios clave
 
-- `id` _(string, required)_: ObjectId como string
-
-### Ejemplo
-
-`GET /api/listings/65097600a74000a4a4a22686`
-
-### Respuesta 200
-
-```json
-{
-  "id": "65097600a74000a4a4a22686",
-  "name": "Ribeira Charming Duplex",
-  "description": "Fantastic duplex apartment...",
-  "imageUrl": "https://a0.muscache.com/im/pictures/....jpg",
-  "amenities": ["TV", "Wifi", "Kitchen"],
-  "address": {
-    "country": "Portugal",
-    "street": "Porto, Porto, Portugal"
-  },
-  "reviews": [
-    {
-      "id": "58663741",
-      "date": "2016-01-03T05:00:00.000Z",
-      "reviewerName": "Cátia",
-      "comments": "A casa da Ana..."
-    }
-  ]
-}
-```
-
-### Notas importantes
-
-- `reviews` debe devolver **solo las últimas 5** (si hay más).
-- `date` en API: string ISO (no Date raw).
-
-### Errores
-
-- 400 si `id` no es ObjectId válido.
-- 404 si no existe.
+- Separación clara entre API, mappers y acceso a datos.
+- Repositorios intercambiables (Mongo / Mock) mediante `IS_API_MOCK`.
+- Endpoints protegidos mediante middleware de autenticación.
+- Tests unitarios e integración reales con MongoDB in-memory.
 
 ---
 
-## 3) POST `/api/listings/:id/reviews`
+## Funcionalidad principal
 
-### Propósito
+### Listings
 
-Añadir una review a un listing.
+- `GET /api/listings`
+  - Filtros: `country`
+  - Paginación: `page`, `pageSize`
+- `GET /api/listings/:id`
+- `PUT /api/listings/:id` (requiere autenticación)
+- `POST /api/listings/:id/reviews` (requiere autenticación)
 
-### Path param
+### Seguridad
 
-- `id` _(string, required)_: ObjectId como string
-
-### Body (JSON)
-
-```json
-{
-  "reviewerName": "Cesar",
-  "comments": "Testing review"
-}
-```
-
-### Reglas
-
-- El backend calcula `date` (now).
-- Puedes generar `id` interno para la review (`ObjectId().toString()` o similar).
-
-### Respuesta
-
-Opción recomendable (simple y útil):
-
-- **201** con la review creada:
-
-```json
-{
-  "id": "6560c2b0c6b2b6e3d8a1a222",
-  "date": "2025-12-15T18:30:00.000Z",
-  "reviewerName": "Cesar",
-  "comments": "Testing review"
-}
-```
-
-### Errores
-
-- 400 si `reviewerName/comments` faltan o vienen vacíos.
-- 400 si `id` inválido.
-- 404 si listing no existe.
+- `POST /api/security/login`
+  - Autenticación con email y password
+  - Devuelve cookie `authorization` con JWT
+- `POST /api/security/logout`
 
 ---
 
-# Checklist de consistencia (para el lab)
+## Autenticación
 
-- ✅ Todos los IDs expuestos como **string**
-- ✅ No se expone el documento completo (solo campos necesarios)
-- ✅ `GET /api/listings` paginado
-- ✅ `GET /api/listings/:id` devuelve últimas 5 reviews
-- ✅ `POST review` calcula fecha en backend
+- Autenticación basada en JWT.
+- El token se almacena en una cookie `httpOnly`.
+- Middleware `authenticationMiddleware`:
+  - Lee cookie `authorization`
+  - Verifica JWT
+  - Inyecta `req.userSession`
+- Rutas protegidas devuelven `401` si no hay sesión válida.
+
+---
+
+## Tests
+
+El proyecto incluye:
+
+- Tests unitarios (mappers).
+- Tests de integración:
+  - Listings
+  - Login
+  - Rutas protegidas
+- MongoDB en memoria para tests (`mongodb-memory-server`).
+
+### Ejecutar tests
+
+```bash
+npm test
+```
+
+## Base de datos
+
+MongoDB
+
+Dataset de Airbnb (listingsAndReviews)
+
+Colección adicional: users
+
+### Seed de datos
+
+El proyecto incluye console runners interactivos:
+
+```bash
+npm run console-runners
+```
+
+Opciones disponibles:
+
+- seed-data → restaura dataset Airbnb (via Docker + mongorestore)
+- seed-users → crea usuarios para autenticación
+
+## Variables de entorno
+
+Ejemplo:
+
+```
+NODE_ENV=development
+PORT=3000
+MONGODB_URL=mongodb://localhost:27017/airbnb
+
+AUTH_SECRET=super-secret
+IS_API_MOCK=false
+
+```
+
+## Scripts útiles
+
+```
+npm start              # Arranca el servidor
+npm test                 # Ejecuta tests
+npm run console-runners  # Ejecuta runners interactivos
+
+```
