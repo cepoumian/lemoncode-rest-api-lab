@@ -1,20 +1,16 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createRestApiServer } from '#core/servers/rest-api.server.js';
-import { listingApi } from './listing.api.js';
-import { seedListings } from '../../../config/test/seed.config.js';
+import { seedListings, seedUsers } from '../../../config/test/seed.config.js';
 
-export const createTestApp = () => {
-  const app = createRestApiServer();
-  app.use('/api/listings', listingApi);
-  return app;
-};
+import { createTestApp } from '../../../config/test/test-app.js';
+import { loginAndGetCookie } from '../../../config/test/auth.helpers.js';
 
 describe('Listing API (integration)', () => {
   const app = createTestApp();
 
   beforeEach(async () => {
     await seedListings();
+    await seedUsers();
   });
 
   it('GET /api/listings returns a paginated list filtered by country', async () => {
@@ -35,9 +31,11 @@ describe('Listing API (integration)', () => {
 
   it('PUT /api/listings/:id updates name and persists it', async () => {
     const id = '65097600a74000a4a4a22686';
+    const cookie = await loginAndGetCookie(app);
 
     const putRes = await request(app)
       .put(`/api/listings/${id}`)
+      .set('Cookie', cookie)
       .send({ name: 'Updated name' });
 
     expect(putRes.status).toBe(204);
@@ -52,24 +50,33 @@ describe('Listing API (integration)', () => {
 
   it('PUT /api/listings/:id returns 400 when body is empty', async () => {
     const id = '65097600a74000a4a4a22686';
+    const cookie = await loginAndGetCookie(app);
 
-    const res = await request(app).put(`/api/listings/${id}`).send({});
+    const res = await request(app)
+      .put(`/api/listings/${id}`)
+      .set('Cookie', cookie)
+      .send({});
     expect(res.status).toBe(400);
   });
 
   it('PUT /api/listings/:id returns 404 when listing does not exist', async () => {
     const nonExistingId = '65097600a74000a4a4a22699';
+    const cookie = await loginAndGetCookie(app);
 
     const res = await request(app)
       .put(`/api/listings/${nonExistingId}`)
+      .set('Cookie', cookie)
       .send({ name: "Doesn't matter" });
 
     expect(res.status).toBe(404);
   });
 
   it('PUT /api/listings/:id returns 400 when id is invalid', async () => {
+    const cookie = await loginAndGetCookie(app);
+
     const res = await request(app)
       .put('/api/listings/not-an-object-id')
+      .set('Cookie', cookie)
       .send({ name: 'Updated name' });
 
     expect(res.status).toBe(400);
