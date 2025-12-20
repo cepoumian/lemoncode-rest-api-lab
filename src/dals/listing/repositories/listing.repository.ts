@@ -6,6 +6,17 @@ export interface AddReviewDalModel {
   date: Date;
 }
 
+export interface UpdateListingDalModel {
+  name?: string;
+  description?: string;
+  imageUrl?: string | null;
+  amenities?: string[];
+  price?: number | null;
+  address?: {
+    street?: string | null;
+  };
+}
+
 export interface ListingRepository {
   getListingsByCountry(
     country: string,
@@ -16,4 +27,6 @@ export interface ListingRepository {
   getListingById(id: string): Promise<ListingDalModel | null>;
 
   addReview(listingId: string, review: AddReviewDalModel): Promise<boolean>;
+
+  updateListing(id: string, update: UpdateListingDalModel): Promise<boolean>;
 }

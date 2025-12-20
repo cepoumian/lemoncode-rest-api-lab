@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { ENV } from '../constants/index.js';
 
 export const createRestApiServer = () => {
@@ -11,5 +12,6 @@ export const createRestApiServer = () => {
       origin: ENV.CORS_ORIGIN,
     })
   );
+  app.use(cookieParser());
   return app;
 };

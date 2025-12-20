@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
+import { createListingRepository } from '#dals/listing/index.js';
+import { mapListingToListItem, mapListingToDetail } from './listing.mappers.js';
+import { aunthenticationMiddleware } from '#core/security/index.js';
 import type {
   CreateReviewApiModel,
   ReviewApiModel,
 } from './listing.api-model.js';
-import { createListingRepository } from '#dals/listing/index.js';
-import { mapListingToListItem, mapListingToDetail } from './listing.mappers.js';
+import type { UpdateListingApiModel } from './listing.api-model.js';
 
 export const listingApi = Router();
 
@@ -60,10 +62,72 @@ listingApi
 
     res.send(mapListingToDetail(listing));
   })
+  .put('/:id', aunthenticationMiddleware, async (req, res) => {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      res.status(400).send('Invalid id');
+      return;
+    }
+
+    const body = req.body as Partial<UpdateListingApiModel>;
+
+    // Normalizar/limpiar
+    const update = {
+      name: body.name?.trim(),
+      description: body.description?.trim(),
+      imageUrl: body.imageUrl ?? undefined,
+      amenities: body.amenities,
+      price: body.price ?? undefined,
+      address: body.address
+        ? {
+            street: body.address.street?.trim() ?? body.address.street,
+          }
+        : undefined,
+    };
+    console.log({ update });
+    // Detectar si update viene vacío
+    const hasAnyField =
+      update.name !== undefined ||
+      update.description !== undefined ||
+      update.imageUrl !== undefined ||
+      update.amenities !== undefined ||
+      update.price !== undefined ||
+      update.address?.street !== undefined;
+
+    // Validaciones mínimas
+    if (!hasAnyField) {
+      res.status(400).send('At least one field must be provided');
+      return;
+    }
+
+    if (update.amenities !== undefined && !Array.isArray(update.amenities)) {
+      res.status(400).send('amenities must be an array of strings');
+      return;
+    }
+
+    if (
+      update.price !== undefined &&
+      update.price !== null &&
+      typeof update.price !== 'number'
+    ) {
+      res.status(400).send('price must be a number or null');
+      return;
+    }
+
+    const updated = await listingRepository.updateListing(id, update);
+
+    if (!updated) {
+      res.sendStatus(404);
+      return;
+    }
+
+    res.sendStatus(204);
+  })
   .get('/:id/reviews', async (_req, res) => {
     res.sendStatus(501);
   })
-  .post('/:id/reviews', async (req, res) => {
+  .post('/:id/reviews', aunthenticationMiddleware, async (req, res) => {
     const { id } = req.params;
 
     if (!ObjectId.isValid(id)) {

@@ -33,3 +33,14 @@ export interface CreateReviewApiModel {
   reviewerName: string;
   comments: string;
 }
+
+export interface UpdateListingApiModel {
+  name?: string;
+  description?: string;
+  imageUrl?: string | null;
+  amenities?: string[];
+  price?: number | null;
+  address?: {
+    street?: string | null;
+  };
+}

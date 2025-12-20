@@ -5,12 +5,14 @@ import {
 import { createRestApiServer, dbServer } from '#core/servers/index.js';
 import { ENV } from '#core/constants/env.constants.js';
 import { listingApi } from '#pods/listing/index.js';
+import { securityApi } from '#pods/security/index.js';
 
 const app = createRestApiServer();
 
 app.use(logRequestMiddleware);
 
 app.use('/api/listings', listingApi);
+app.use('/api/security', securityApi);
 
 app.use(logErrorRequestMiddleware);
 
